@@ -1,0 +1,20 @@
+{% extends "layout.html" %}
+
+{% block title %}
+{{ folder.name }}
+{% endblock %}
+
+{% block content %}
+{% for f in folder.dirs %}
+<p>
+  <a href="{{ url_for('show', path=f.fid) }}">{{ f.name }}</a>
+  <a href="{{ url_for('play', fid=f.fid) }}">Play</a>
+</p>
+{% endfor %}
+{% for f in folder.files %}
+<p>
+  {{ f }}
+</p>
+{% endfor %}
+
+{% endblock %}
