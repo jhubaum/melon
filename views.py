@@ -1,26 +1,27 @@
-from flask import redirect, url_for, render_template
+from flask import url_for, render_template, send_from_directory
 from . import app
-from .directory import Directory
+from .directory import Folder
 
-dir = Directory('/home/johannes/files/media/music')
+
+dir = Folder(app.static_folder, 'music')
 
 
 @app.route('/')
-def index():
-    return redirect(url_for('show', path=""))
-
-
-@app.route('/show/')
-@app.route('/show/<path>')
-def show(path="base"):
-    if not dir.contains(path):
-        return "not found", 404
-
-    return render_template('list.html', folder=dir.get_folder(path))
+@app.route('/<path:path>')
+def show(path=''):
+    return render_template('list.html', folder=dir.resolve_folder(path))
 
 
 @app.route('/play/<fid>')
 def play(fid):
-    files = dir.get_folder(fid).playlist()
-    files = "".join(map(lambda x: f'<li>{x}</li>', files))
-    return f'<ul>{files}</ul>'
+    if not dir.contains(fid):
+        return "not found", 404
+
+    return render_template('play.html', folder=dir.get_folder(fid))
+
+@app.route('/tracks/<path:path>')
+def get_track(path):
+    print(app.static_folder, path.split('/'))
+    return send_from_directory('static/music',
+                               filename="alpha_waves.mp3",
+                               as_attachment=True)

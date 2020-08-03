@@ -5,10 +5,10 @@
 {% endblock %}
 
 {% block content %}
-{% for f in folder.dirs %}
+{% for f in folder.folders.values() %}
 <p>
-  <a href="{{ url_for('show', path=f.fid) }}">{{ f.name }}</a>
-  <a href="{{ url_for('play', fid=f.fid) }}">Play</a>
+  <a href="{{ url_for('show', path=f.url) }}">{{ f.name }}</a>
+  <a href="{{ url_for('play', fid=f.url) }}">Play</a>
 </p>
 {% endfor %}
 {% for f in folder.files %}

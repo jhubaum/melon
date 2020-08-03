@@ -1,0 +1,19 @@
+{% extends "layout.html" %}
+
+{% block title %}
+Playing {{ folder.name }}
+{% endblock %}
+
+{% block content %}
+<audio-playlist>
+  <data-list>
+    {% for track in folder.playlist() %}
+    <option value="{{ track }}" >
+    {% endfor %}
+  </data-list>
+</audio-playlist>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/playlist.js') }}"></script>
+{% endblock %}
