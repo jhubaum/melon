@@ -11,9 +11,10 @@
   <a href="{{ url_for('play', fid=f.url) }}">Play</a>
 </p>
 {% endfor %}
-{% for f in folder.files %}
+{% for f in folder.files.values() %}
 <p>
-  {{ f }}
+  {{ f.name }}
+  <a href="{{ url_for('show', path=f.url) }}">Play</a>
 </p>
 {% endfor %}
 

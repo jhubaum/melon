@@ -3,13 +3,18 @@ from . import app
 from .directory import Folder
 
 
-dir = Folder(app.static_folder, 'music')
+dir = Folder([app.static_folder, 'music'])
 
 
 @app.route('/')
 @app.route('/<path:path>')
 def show(path=''):
-    return render_template('list.html', folder=dir.resolve_folder(path))
+    r = dir.resolve(path)
+
+    if r is None:
+        return "not found", 404
+
+    return r.render()
 
 
 @app.route('/play/<fid>')

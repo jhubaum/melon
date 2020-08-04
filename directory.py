@@ -1,6 +1,8 @@
 import os
 import re
 
+from flask import render_template, send_from_directory
+
 FILE_TYPES = ['mp3', 'm4a', 'wma']
 
 
@@ -14,92 +16,75 @@ Name for the folder
 Path on disk
 URL
 """
-class Folder:
-    def __init__(self, *path_parts, url=[]):
-        self.path = os.path.join(*path_parts)
-        self.name = path_parts[-1]
-        self.url = '/'.join(url)
 
+class File:
+    @staticmethod
+    def modify_name(name):
+        return re.sub(r'^[\d\s-]*', '', '.'.join(name.split('.')[:-1]))
+
+    def __init__(self, path, name, url):
+        self.name = name
+        self.url = url
+        self.path = path
+
+    def render(self):
+        print(self.path)
+        return send_from_directory('static/music', filename=self.path)
+
+
+class Folder:
+    def __init__(self, path, name=None, url='', base_path=None):
+        if name is None:
+            self.path = os.path.join(*path)
+            name = path[-1]
+        else:
+            self.path = path
+            self.name = name
+        self.url = url
+
+        if base_path is None:
+            base_path = self.path
+
+        self.populate(base_path)
+
+    def populate(self, base_path):
         self.folders = dict()
         self.files = dict()
 
-        for f in os.listdir(self.path):
-            p = os.path.join(self.path, f)
-            p_f = _pathify(f)
-            if os.path.isdir(p):
-                self.folders[p_f] = Folder(p,
-                                           url=[self.url, p_f])
+        def url(fid):
+            return '/'.join([self.url, fid])
 
+        for f in sorted(os.listdir(self.path)):
+            path = os.path.join(self.path, f)
+            if os.path.isdir(path):
+                fid = _pathify(f)
+                self.folders[fid] = Folder(path, f, url(fid), base_path)
             elif f.split('.')[-1] in FILE_TYPES:
-                self.files[p_f] = f
+                name = File.modify_name(f)
+                fid = _pathify(name)
+                self.files[fid] = File(os.path.relpath(path, base_path), name,
+                                       url(fid))
 
-    def resolve_folder(self, url):
-        if url == '':
+    def resolve(self, path):
+        if path == '':
             return self
 
+        path = path.split('/')
+
         it = self
-        for url in url.split('/'):
+        i = 0
+        for i, url in enumerate(path):
             if url not in it.folders:
-                return None
+                break
             it = it.folders[url]
-        return it
+        else:
+            return it
 
+        if len(path) - i == 1:
+            if len(path[i]) == 0:
+                return it
+            if path[i] in it.files:
+                return it.files[url]
 
-"""
-class Folder:
-    def __init__(self, fid, path, name):
-        self.fid = fid
-        self.path = path
-        self.name = name
-
-        self.dirs = []
-        self.files = []
-
-    def _parse_children(self, folders, tracks):
-        for f in os.listdir(self.path):
-            p = os.path.join(self.path, f)
-            if os.path.isdir(p):
-                new = Folder(len(folders), p, f)
-                folders[str(new.fid)] = new
-                self.dirs.append(new)
-                yield new
-            elif f.split('.')[-1] in FILE_TYPES:
-
-                self.files.append(p)
-
-        self.files.sort()
-        self.dirs.sort(key=lambda x:x.name)
-
-    def playlist(self):
-        queue = [self]
-        tracks = []
-        while len(queue) > 0:
-            f = queue.pop(0)
-            tracks += f.files
-            queue += f.dirs
-
-        return tracks
-
-
-class Directory:
-    def __init__(self, base_path):
-        self.path = base_path
-        self.folders = dict()
-        self.tracks = dict()
-        self._parse()
-
-    def _parse(self):
-        queue = [Folder("base", self.path, "base")]
-        self.folders[queue[0].fid] = queue[0]
-
-        while len(queue) > 0:
-            f = queue.pop(0)
-            for c in f._parse_children(self.folders, self.tracks):
-                queue.append(c)
-
-    def contains(self, fid):
-        return fid in self.folders
-
-    def get_folder(self, fid):
-        return self.folders.get(fid, None)
-"""
+    def render(self):
+        return render_template('list.html', folder=self)
